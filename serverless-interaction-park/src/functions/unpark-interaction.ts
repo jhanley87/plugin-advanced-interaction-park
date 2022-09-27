@@ -36,7 +36,7 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
 
     try {
       const client = context.getTwilioClient();
-      
+
       let convo = await client.conversations
         .conversations(event.ConversationSid)
         .fetch();
@@ -45,10 +45,15 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
 
       console.log("removing webhook for conversation", attributes);
 
-      var interactionParticipants = await client.flexApi.v1.interaction(attributes.InteractionSid).channels(attributes.ChannelSid).participants.list();
-      var interacrtionWithAgent = interactionParticipants.some(participant => participant.type === 'agent');
-      
-      if(interacrtionWithAgent){
+      var interactionParticipants = await client.flexApi.v1
+        .interaction(attributes.InteractionSid)
+        .channels(attributes.ChannelSid)
+        .participants.list();
+      var interacrtionWithAgent = interactionParticipants.some(
+        (participant) => participant.type === "agent"
+      );
+
+      if (interacrtionWithAgent) {
         console.log("Interaction is already with an agent");
         callback(null, cors.response("Already with agent", 200));
         return;
@@ -60,15 +65,21 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
         .webhooks(attributes.WebhookSid)
         .remove();
 
-      var routingProps = {
+      var routingProps: any = {
         workspace_sid: context.WORKSPACE_SID,
+        attributes: attributes.TaskAttributes,
+        queue_sid: attributes.ShouldRouteToWorker
+          ? attributes.QueueSid
+          : undefined,
+        worker_sid: attributes.ShouldRouteToWorker
+          ? attributes.WorkerSid
+          : undefined,
         workflow_sid: attributes.WorkflowSid,
         task_channel_unique_name: attributes.TaskChannelUniqueName,
-        attributes: attributes.TaskAttributes,
       };
 
       console.log("inviting new interaction", routingProps);
-      
+
       // Create a new task through the invites endpoint. Alternatively you can pass
       // a queue_sid and a worker_sid inside properties to add a specific agent back to the interation
       let interactionInvite = await client.flexApi.v1
@@ -80,22 +91,20 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
           },
         });
 
-
-        try{
-          console.log(`deleting cronhook ${attributes.CronhookId}`)
-          //try delete the cronhook, if it fails move on
-          const { data, status } = await axios.delete(
-            `https://api.cronhooks.io/schedules/${attributes.CronhookId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${context.CRONHOOKS_API_KEY}`,
-              },
-            }
-          );
-        }
-        catch(error){
-          console.log("failed to delete cronhook", error);
-        }
+      try {
+        console.log(`deleting cronhook ${attributes.CronhookId}`);
+        //try delete the cronhook, if it fails move on
+        const { data, status } = await axios.delete(
+          `https://api.cronhooks.io/schedules/${attributes.CronhookId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${context.CRONHOOKS_API_KEY}`,
+            },
+          }
+        );
+      } catch (error) {
+        console.log("failed to delete cronhook", error);
+      }
       //if we got here everything went well
       callback(null, cors.response(interactionInvite, 200));
     } catch (error) {

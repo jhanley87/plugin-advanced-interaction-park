@@ -24,6 +24,10 @@ type MyEvent = {
   WorkerName: string;
   TaskAttributes: string;
   UnparkTime?: string;
+  ShouldRouteToWorker: boolean;
+  ShouldTriggerOnTime:boolean;
+  WorkerSid:boolean;
+  QueueSid: string;
 };
 
 // If you want to use environment variables, you will need to type them like
@@ -97,12 +101,12 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
 
         //if a time has been provided at which the interaction should be unparked, then schedule a webhook
         let cronhookId = undefined;
-        if (event.UnparkTime) {
+        if (event.ShouldTriggerOnTime) {
           const { data, status } = await axios.post(
             "https://api.cronhooks.io/schedules",
             {
               url: unparkUrl,
-              timezone: "Europe/London",
+              timezone: "Etc/UTC",
               title: `unpark-${event.ConversationSid}`,
               method: "POST",
               payload: {
@@ -130,7 +134,7 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
         let newAttributes = {
           ...event,
           WebhookSid: webhook.sid,
-          CronhookId: cronhookId,
+          CronhookId: cronhookId
         };
 
         await client.conversations

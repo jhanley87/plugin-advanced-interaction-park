@@ -9,9 +9,13 @@ import {
 import * as Flex from "@twilio/flex-ui";
 import axios from "axios";
 
-interface ParkInteractionPayload {
+export interface ParkInteractionPayload {
   task: ITask;
-  targetSid: string;
+  targetSid?: string;
+  unparkDateTime: string | undefined;
+  shouldRouteToWorker: boolean;
+  shouldTriggerOnTime: boolean;
+  workerSid: string | undefined;
 }
 
 const URL_PARK_AN_INTERACTION =
@@ -41,6 +45,7 @@ const parkInteraction = async (payload: ParkInteractionPayload) => {
   const agent = await getAgent(payload);
 
   const manager = Manager.getInstance();
+
   const body = {
     ChannelSid: agent.channelSid,
     InteractionSid: agent.interactionSid,
@@ -52,13 +57,17 @@ const parkInteraction = async (payload: ParkInteractionPayload) => {
     TargetSid: payload.targetSid,
     WorkerName: manager.user.identity,
     TaskAttributes: payload.task.attributes,
-    Token: Flex.Manager.getInstance().user.token,
-    UnparkTime: new Date((new Date).getTime() + 61 * 60000).toISOString() //todo: make this a param
+    Token: manager.user.token,
+    ShouldTriggerOnTime: payload.shouldTriggerOnTime,
+    UnparkTime: payload.unparkDateTime,
+    ShouldRouteToWorker: payload.shouldRouteToWorker,
+    WorkerSid: payload.workerSid,
+    QueueSid: payload.task.queueSid
   };
 
   try {
-    //const { data, status } = await axios.post(URL_PARK_AN_INTERACTION, body);
-    let status = 200;
+    console.log("calling park interaction API", body)
+    const { data, status } = await axios.post(URL_PARK_AN_INTERACTION, body);
     
     if (status === 200) {
       return Notifications.showNotification("parkedNotification");
