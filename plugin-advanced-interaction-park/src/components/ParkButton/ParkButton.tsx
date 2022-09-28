@@ -3,9 +3,11 @@ import styled from "@emotion/styled";
 import { ITask } from "@twilio/flex-ui";
 
 import { PauseIcon } from "@twilio-paste/icons/esm/PauseIcon";
+import { Spinner } from '@twilio-paste/core/spinner'
 
 interface ParkButtonProps {
   task?: ITask;
+  isLoading: boolean;
   onClick: () => void;
 }
 
@@ -21,13 +23,21 @@ const IconWrapper = styled.div<IconWrapperProps>`
 export const ParkButton = (props: ParkButtonProps) => {
   return (
     <>
-      <IconWrapper onClick={props.onClick}>
-        <PauseIcon
-          decorative={false}
-          title="Pause Interaction"
-          size="sizeIcon40"
-        />
-      </IconWrapper>
+      {props.isLoading ? (
+        <IconWrapper isLoading={props.isLoading}>
+          <Spinner size='sizeIcon40' decorative={false} title='Loading' />
+        </IconWrapper>
+      ) : (
+        <IconWrapper
+          onClick={props.onClick}
+        >
+          <PauseIcon
+            decorative={false}
+            title='Pause Interaction'
+            size='sizeIcon40'
+          />
+        </IconWrapper>
+      )}
     </>
   );
 };

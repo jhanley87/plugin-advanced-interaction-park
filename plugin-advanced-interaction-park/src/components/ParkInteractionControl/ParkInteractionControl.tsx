@@ -26,6 +26,7 @@ interface SnoozeButtonProps {
 }
 
 export const ParkInteractionControl = (props: SnoozeButtonProps) => {
+  const [isLoading, setIsLoading] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
   const [trigger, setTrigger] = React.useState("timer");
   const [routing, setRouting] = React.useState("workflow");
@@ -49,6 +50,8 @@ export const ParkInteractionControl = (props: SnoozeButtonProps) => {
   };
 
   const handlePark = () => {
+    setIsLoading(true);
+    
     const unparkDateTimeStr = unparkDateTime?.toISOString();
 
     const actionPayload: ParkInteractionPayload = {
@@ -64,7 +67,7 @@ export const ParkInteractionControl = (props: SnoozeButtonProps) => {
 
   return (
     <div>
-      <ParkButton onClick={handleOpen} />
+      <ParkButton onClick={handleOpen} isLoading={isLoading}/>
       <Modal
         ariaLabelledby={"modalHeadingID"}
         isOpen={isOpen}

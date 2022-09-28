@@ -29,7 +29,6 @@ npm i
 ```
 You can then copy the `.env.example` file to create your own configuration
 ```
-cp ./public/appConfig.example.js ./public/appconfig.js
 cp .env.example .env
 ```
 Then you will need to enter your configuration into this new file
@@ -52,13 +51,14 @@ Now you are ready to deploy the Flex plugin. Firstly move over to the correct di
 cd ../plugin-advanced-interaction-park
 npm i
 ```
-With that done you can now configure your plugin
+With that done you can now copy the required config file for your plugin
 ```
+cp ./public/appConfig.example.js ./public/appconfig.js
 cp .env.example .env
 ```
 Then you will need to enter your configuration into this new file
 ```
-FLEX_APP_URL_PARK_AN_INTERACTION= https://{Domain that you noted in previous step}/park-interaction
+FLEX_APP_URL_PARK_AN_INTERACTION=https://{Domain that you noted in previous step}/park-interaction
 ```
 Now you are ready to deploy your plugin to your Flex instance. Firstly create a production build of your plugin and deploy it
 ```
