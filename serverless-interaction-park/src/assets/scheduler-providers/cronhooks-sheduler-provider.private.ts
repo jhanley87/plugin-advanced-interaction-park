@@ -66,7 +66,7 @@ export const Scheduler: Scheduler = {
         ErrorMessage: `Failed to delete schedule ${status}`,
       };
     }
-    
+
     return { Success: true };
-  },
+  }
 };
