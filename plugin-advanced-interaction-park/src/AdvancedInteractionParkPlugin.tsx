@@ -1,12 +1,11 @@
 import React from 'react';
 import * as Flex from '@twilio/flex-ui';
 import { FlexPlugin } from '@twilio/flex-plugin';
-import { ParkButton } from './components/ParkButton/ParkButton';
 import { CustomizationProvider } from '@twilio-paste/core/customization'
 
 import "./Notifications"
 import "./Actions"
-import { SnoozeButton } from './components/SnoozeButton/SnoozeButton';
+import { ParkInteractionControl } from './components'
 
 const PLUGIN_NAME = 'AdvancedInteractionParkPlugin';
 
@@ -22,22 +21,13 @@ export default class AdvancedInteractionParkPlugin extends FlexPlugin {
    * @param flex { typeof Flex }
    */
   async init(flex: typeof Flex, manager: Flex.Manager): Promise<void> {
+    
     flex.setProviders({
       PasteThemeProvider: CustomizationProvider
-    })
-
-    const options: Flex.ContentFragmentProps = { sortOrder: -1 };
-    // flex.TaskCanvasHeader.Content.add(
-    //   <ParkButton key='conversation-park-button' />,
-    //   {
-    //     sortOrder: 1,
-    //     if: props =>
-    //       props.channelDefinition.capabilities.has('Chat') &&
-    //       props.task.taskStatus === 'assigned'
-    //   }
-    // )
+    });
+  
     flex.TaskCanvasHeader.Content.add(
-      <SnoozeButton key='conversation-snooze-button' />,
+      <ParkInteractionControl key='conversation-park-button' />,
       {
         sortOrder: 1,
         if: props =>

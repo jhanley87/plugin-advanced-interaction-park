@@ -1,10 +1,6 @@
 import React, { ChangeEvent, useState } from "react";
-import styled from "@emotion/styled";
 import { Actions, ITask } from "@twilio/flex-ui";
 import * as Flex from "@twilio/flex-ui";
-
-import { PauseIcon } from "@twilio-paste/icons/esm/PauseIcon";
-import { Spinner } from "@twilio-paste/core/spinner";
 import {
   Box,
   Button,
@@ -18,8 +14,9 @@ import {
   ModalFooter,
   ModalFooterActions,
 } from "@twilio-paste/core";
-import { ParkButton } from "../ParkButton/ParkButton";
 import dayjs, { Dayjs } from "dayjs";
+
+import { ParkButton } from "../ParkButton/ParkButton";
 import { DateTimePickerWrapper } from "../DatePicker/DateTimePicker";
 import { ParkInteractionPayload } from "../../Actions";
 
@@ -27,7 +24,7 @@ interface SnoozeButtonProps {
   task?: ITask;
 }
 
-export const SnoozeButton = (props: SnoozeButtonProps) => {
+export const ParkInteractionControl = (props: SnoozeButtonProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [trigger, setTrigger] = React.useState("timer");
   const [routing, setRouting] = React.useState("workflow");

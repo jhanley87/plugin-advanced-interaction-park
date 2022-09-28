@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import styled from "@emotion/styled";
-import { Actions, ITask } from "@twilio/flex-ui";
+import { ITask } from "@twilio/flex-ui";
 
 import { PauseIcon } from "@twilio-paste/icons/esm/PauseIcon";
-import { Spinner } from "@twilio-paste/core/spinner";
 
 interface ParkButtonProps {
   task?: ITask;

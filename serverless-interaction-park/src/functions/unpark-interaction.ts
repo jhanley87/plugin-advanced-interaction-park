@@ -7,108 +7,110 @@ import {
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
 
-import axios from "axios";
+import Scheduler from "../interfaces/Scheduler";
+import { InteractionParkingContext } from "../types/InteractionParkingContext";
+import { RequiredConversationAttributes } from "../types/RequiredConversationAttributes";
+import { UnparkInteractionEvent } from "../types/UnparkInteractionEvent";
 
-type MyEvent = {
-  ConversationSid: string;
-};
+//Change this string to change the scheduler that will be used
+const scheduleProviderName = "cronhooks-sheduler-provider";
 
-// If you want to use environment variables, you will need to type them like
-// this and add them to the Context in the function signature as
-// Context<MyContext> as you see below.
-type MyContext = {
-  ACCOUNT_SID: string;
-  AUTH_TOKEN: string;
-  CRONHOOKS_API_KEY: string;
-  NGROK_ENDPOINT: string;
-  WORKSPACE_SID: string;
-};
+export const handler: ServerlessFunctionSignature<
+  InteractionParkingContext,
+  UnparkInteractionEvent
+> = async function (
+  context: Context<InteractionParkingContext>,
+  event: UnparkInteractionEvent,
+  callback: ServerlessCallback
+) {
+  console.log("Start execute unpark-interaction", event);
 
-export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
-  async function (
-    context: Context<MyContext>,
-    event: MyEvent,
-    callback: ServerlessCallback
-  ) {
-    console.log("Start execute unpark-interaction", event);
+  const cors = require(Runtime.getFunctions()["utility/cors-response"].path);
+  const scheduler: Scheduler = require(Runtime.getAssets()[
+    `/scheduler-providers/${scheduleProviderName}.js`
+  ].path).Scheduler;
 
-    const cors = require(Runtime.getFunctions()["utility/cors-response"].path);
+  try {
+    const client = context.getTwilioClient();
 
-    try {
-      const client = context.getTwilioClient();
+    let convo = await client.conversations
+      .conversations(event.ConversationSid)
+      .fetch();
 
-      let convo = await client.conversations
-        .conversations(event.ConversationSid)
-        .fetch();
+    let attributes: RequiredConversationAttributes = JSON.parse(
+      convo.attributes
+    );
 
-      let attributes = JSON.parse(convo.attributes);
+    console.log("removing webhook for conversation", attributes);
 
-      console.log("removing webhook for conversation", attributes);
+    var interactionParticipants = await client.flexApi.v1
+      .interaction(attributes.InteractionSid)
+      .channels(attributes.ChannelSid)
+      .participants.list();
 
-      var interactionParticipants = await client.flexApi.v1
-        .interaction(attributes.InteractionSid)
-        .channels(attributes.ChannelSid)
-        .participants.list();
-      var interacrtionWithAgent = interactionParticipants.some(
-        (participant) => participant.type === "agent"
-      );
+    var interactionWithAgent = interactionParticipants.some(
+      (participant) => participant.type === "agent"
+    );
 
-      if (interacrtionWithAgent) {
-        console.log("Interaction is already with an agent");
-        callback(null, cors.response("Already with agent", 200));
-        return;
-      }
-
-      // Remove webhook so it doesn't keep triggering if parked more than once
-      await client.conversations
-        .conversations(event.ConversationSid)
-        .webhooks(attributes.WebhookSid)
-        .remove();
-
-      var routingProps: any = {
-        workspace_sid: context.WORKSPACE_SID,
-        attributes: attributes.TaskAttributes,
-        queue_sid: attributes.ShouldRouteToWorker
-          ? attributes.QueueSid
-          : undefined,
-        worker_sid: attributes.ShouldRouteToWorker
-          ? attributes.WorkerSid
-          : undefined,
-        workflow_sid: attributes.WorkflowSid,
-        task_channel_unique_name: attributes.TaskChannelUniqueName,
-      };
-
-      console.log("inviting new interaction", routingProps);
-
-      // Create a new task through the invites endpoint. Alternatively you can pass
-      // a queue_sid and a worker_sid inside properties to add a specific agent back to the interation
-      let interactionInvite = await client.flexApi.v1
-        .interaction(attributes.InteractionSid)
-        .channels(attributes.ChannelSid)
-        .invites.create({
-          routing: {
-            properties: routingProps,
-          },
-        });
-
-      try {
-        console.log(`deleting cronhook ${attributes.CronhookId}`);
-        //try delete the cronhook, if it fails move on
-        const { data, status } = await axios.delete(
-          `https://api.cronhooks.io/schedules/${attributes.CronhookId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${context.CRONHOOKS_API_KEY}`,
-            },
-          }
-        );
-      } catch (error) {
-        console.log("failed to delete cronhook", error);
-      }
-      //if we got here everything went well
-      callback(null, cors.response(interactionInvite, 200));
-    } catch (error) {
-      console.log("error executing function", error);
-      callback(null, cors.response(error, 500));
+    if (interactionWithAgent) {
+      console.log("Interaction is already with an agent");
+      callback(null, cors.response("Already with agent", 200));
+      return;
     }
-  };
+
+    // Remove webhook so it doesn't keep triggering if parked more than once
+    await client.conversations
+      .conversations(event.ConversationSid)
+      .webhooks(attributes.WebhookSid)
+      .remove();
+
+    var routingProps: object = {
+      workspace_sid: context.WORKSPACE_SID,
+      attributes: attributes.TaskAttributes,
+      queue_sid: attributes.ShouldRouteToWorker
+        ? attributes.QueueSid
+        : undefined,
+      worker_sid: attributes.ShouldRouteToWorker
+        ? attributes.WorkerSid
+        : undefined,
+      workflow_sid: attributes.WorkflowSid,
+      task_channel_unique_name: attributes.TaskChannelUniqueName,
+    };
+
+    console.log("inviting new interaction", routingProps);
+
+    // Create a new task through the invites endpoint. Alternatively you can pass
+    // a queue_sid and a worker_sid inside properties to add a specific agent back to the interation
+    let interactionInvite = await client.flexApi.v1
+      .interaction(attributes.InteractionSid)
+      .channels(attributes.ChannelSid)
+      .invites.create({
+        routing: {
+          properties: routingProps,
+        },
+      });
+
+    //if this park had a time trigger
+    if (attributes.ShouldTriggerOnTime) {
+      try {
+        scheduler.RemoveWebhookSchedule({
+          ScheduleId: attributes.ScheduleId,
+          SchedulerProviderApiKey: context.SCHEDULER_API_KEY,
+        });
+        console.log(`deleting schedule ${attributes.ScheduleId}`);
+        //try delete the schedule, if it fails move on
+        scheduler.RemoveWebhookSchedule({
+          ScheduleId: attributes.ScheduleId,
+          SchedulerProviderApiKey: context.SCHEDULER_API_KEY,
+        });
+      } catch (error) {
+        console.log("failed to delete schedule", error);
+      }
+    }
+    //if we got here everything went well
+    callback(null, cors.response(interactionInvite, 200));
+  } catch (error) {
+    console.log("error executing function", error);
+    callback(null, cors.response(error, 500));
+  }
+};

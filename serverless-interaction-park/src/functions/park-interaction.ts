@@ -6,151 +6,112 @@ import {
   ServerlessCallback,
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
-
 import { validator } from "twilio-flex-token-validator";
 
-import axios from "axios";
+import { ParkInteractionEvent } from "../types/ParkInteractionEvent";
+import { InteractionParkingContext } from "../types/InteractionParkingContext";
+import Scheduler from "../interfaces/Scheduler";
+import { RequiredConversationAttributes } from "../types/RequiredConversationAttributes";
 
-type MyEvent = {
-  Token: string;
-  InteractionSid: string;
-  ChannelSid: string;
-  ParticipantSid: string;
-  ConversationSid: string;
-  TaskSid: string;
-  WorkflowSid: string;
-  TaskChannelUniqueName: string;
-  TargetSid: string;
-  WorkerName: string;
-  TaskAttributes: string;
-  UnparkTime?: string;
-  ShouldRouteToWorker: boolean;
-  ShouldTriggerOnTime:boolean;
-  WorkerSid:boolean;
-  QueueSid: string;
-};
+//Change this string to change the scheduler that will be used
+const scheduleProviderName = "cronhooks-sheduler-provider";
 
-// If you want to use environment variables, you will need to type them like
-// this and add them to the Context in the function signature as
-// Context<MyContext> as you see below.
-type MyContext = {
-  ACCOUNT_SID: string;
-  AUTH_TOKEN: string;
-  CRONHOOKS_API_KEY: string;
-  NGROK_ENDPOINT: string;
-};
+export const handler: ServerlessFunctionSignature<
+  InteractionParkingContext,
+  ParkInteractionEvent
+> = async function (
+  context: Context<InteractionParkingContext>,
+  event: any,
+  callback: ServerlessCallback
+) {
+  const cors = require(Runtime.getFunctions()["utility/cors-response"].path);
+  const scheduler: Scheduler = require(Runtime.getAssets()[
+    `/scheduler-providers/${scheduleProviderName}.js`
+  ].path).Scheduler;
 
-export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
-  async function (
-    context: Context<MyContext>,
-    event: any,
-    callback: ServerlessCallback
-  ) {
-    const cors = require(Runtime.getFunctions()["utility/cors-response"].path);
+  const client = context.getTwilioClient();
 
-    const client = context.getTwilioClient();
+  //Create the url for the unpark action
+  var unparkUrl = `${
+    context.DOMAIN_NAME?.includes("localhost")
+      ? context.NGROK_ENDPOINT ?? context.DOMAIN_NAME
+      : context.DOMAIN_NAME
+  }/unpark-interaction`;
 
-    //Create the url for the unpark action
-    var unparkUrl = `${
-      context.DOMAIN_NAME?.includes("localhost")
-        ? context.NGROK_ENDPOINT ?? context.DOMAIN_NAME
-        : context.DOMAIN_NAME
-    }/unpark-interaction`;
+  console.log("Start execute park-interaction", event);
 
-    console.log("UNPARK URL", unparkUrl);
+  try {
+    //Validate the request came from flex
+    await validator(
+      event.Token ?? "",
+      context.ACCOUNT_SID ?? "",
+      context.AUTH_TOKEN ?? ""
+    );
 
-    console.log("Start execute park-interaction", event);
+    console.log("Flex token valid, executing function");
 
     try {
-      let token = await validator(
-        event.Token ?? "",
-        context.ACCOUNT_SID ?? "",
-        context.AUTH_TOKEN ?? ""
-      );
+      // Remove the agent
+      await client.flexApi.v1
+        .interaction(event.InteractionSid)
+        .channels(event.ChannelSid)
+        .participants(event.ParticipantSid)
+        .update({ status: "closed" });
 
-      console.log("Flex token valid, executing function");
+      console.log("Agent removed.");
 
-      try {
-        console.log(
-          "DEBUG",
-          event.InteractionSid,
-          event.ChannelSid,
-          event.ParticipantSid
-        );
-        // Remove the agent
-        await client.flexApi.v1
-          .interaction(event.InteractionSid)
-          .channels(event.ChannelSid)
-          .participants(event.ParticipantSid)
-          .update({ status: "closed" });
+      //create the webhook that will unpark when customer sends a message
+      let webhook = await client.conversations
+        .conversations(event.ConversationSid)
+        .webhooks.create({
+          configuration: {
+            method: "POST",
+            filters: ["onMessageAdded"],
+            url: unparkUrl,
+          },
+          target: "webhook",
+        });
 
-        console.log("Agent removed.");
+      console.log("webhook added");
 
-        let webhook = await client.conversations
-          .conversations(event.ConversationSid)
-          .webhooks.create({
-            configuration: {
-              method: "POST",
-              filters: ["onMessageAdded"],
-              url: unparkUrl,
-            },
-            target: "webhook",
-          });
+      //if we should have a time based trigger create the schedule
+      let ScheduleId = undefined;
+      if (event.ShouldTriggerOnTime) {
+        var schedule = await scheduler.CreateScheduleWebhook({
+          ConversationSid: event.ConversationSid,
+          ScheduleDateTime: event.UnparkTime,
+          ScheduledWebhookUrl: unparkUrl,
+          SchedulerProviderApiKey: context.SCHEDULER_API_KEY,
+        });
 
-        console.log("webhook added");
-
-        //if a time has been provided at which the interaction should be unparked, then schedule a webhook
-        let cronhookId = undefined;
-        if (event.ShouldTriggerOnTime) {
-          const { data, status } = await axios.post(
-            "https://api.cronhooks.io/schedules",
-            {
-              url: unparkUrl,
-              timezone: "Etc/UTC",
-              title: `unpark-${event.ConversationSid}`,
-              method: "POST",
-              payload: {
-                ConversationSid: event.ConversationSid,
-              },
-              isRecurring: false,
-              runAt: event.UnparkTime,
-              contentType: "application/json",
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${context.CRONHOOKS_API_KEY}`,
-              },
-            }
-          );
-
-          if (status === 200) {
-            console.log("conversation unpark time set succesfully");
-            cronhookId = data.id;
-          } else {
-            console.log("problem setting unpark time");
-          }
+        if (schedule.Success) {
+          console.log("Schedule created");
+          ScheduleId = schedule.ScheduleId;
+        } else {
+          console.log(`Shedule not created (Error:${schedule.ErrorMessage})`);
         }
-
-        let newAttributes = {
-          ...event,
-          WebhookSid: webhook.sid,
-          CronhookId: cronhookId
-        };
-
-        await client.conversations
-          .conversations(event.ConversationSid)
-          .update({ attributes: `${JSON.stringify(newAttributes)}` });
-
-        console.log("conversation updated");
-
-        callback(null, cors.response(newAttributes, 200));
-      } catch (error) {
-        console.log("error executing function", error);
-        callback(null, cors.response(error, 500));
       }
+
+      let newAttributes: RequiredConversationAttributes = {
+        ...event,
+        WebhookSid: webhook.sid,
+        ScheduleId: ScheduleId,
+      };
+
+      await client.conversations
+        .conversations(event.ConversationSid)
+        .update({ attributes: `${JSON.stringify(newAttributes)}` });
+
+      console.log("conversation updated");
+
+      callback(null, cors.response(newAttributes, 200));
     } catch (error) {
-      console.log("Not authenticated");
-      //Flex token invalid, send 403 response
-      callback(null, cors.response(error, 403));
+      console.log("error executing function", error);
+      callback(null, cors.response(error, 500));
     }
-  };
+  } catch (error) {
+    console.log("Not authenticated");
+    //Flex token invalid, send 403 response
+    callback(null, cors.response(error, 403));
+  }
+};

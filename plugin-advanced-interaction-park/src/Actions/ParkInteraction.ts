@@ -6,7 +6,6 @@ import {
   ActionFunction,
   ITask,
 } from "@twilio/flex-ui";
-import * as Flex from "@twilio/flex-ui";
 import axios from "axios";
 
 export interface ParkInteractionPayload {
