@@ -93,16 +93,16 @@ export const handler: ServerlessFunctionSignature<
     //if this park had a time trigger
     if (attributes.ShouldTriggerOnTime) {
       try {
-        scheduler.RemoveWebhookSchedule({
-          ScheduleId: attributes.ScheduleId,
-          SchedulerProviderApiKey: context.SCHEDULER_API_KEY,
-        });
         console.log(`deleting schedule ${attributes.ScheduleId}`);
         //try delete the schedule, if it fails move on
-        scheduler.RemoveWebhookSchedule({
+        let deleteSchedule = await scheduler.RemoveWebhookSchedule({
           ScheduleId: attributes.ScheduleId,
           SchedulerProviderApiKey: context.SCHEDULER_API_KEY,
         });
+
+        if(!deleteSchedule.Success){
+          console.log(`failed to delete schedule ${deleteSchedule.ErrorMessage}`);
+        }
       } catch (error) {
         console.log("failed to delete schedule", error);
       }

@@ -32,11 +32,13 @@ export const handler: ServerlessFunctionSignature<
   const client = context.getTwilioClient();
 
   //Create the url for the unpark action
-  var unparkUrl = `${
+  var unparkUrl = `https://${
     context.DOMAIN_NAME?.includes("localhost")
       ? context.NGROK_ENDPOINT ?? context.DOMAIN_NAME
       : context.DOMAIN_NAME
   }/unpark-interaction`;
+
+  console.log("URL",unparkUrl)
 
   console.log("Start execute park-interaction", event);
 
