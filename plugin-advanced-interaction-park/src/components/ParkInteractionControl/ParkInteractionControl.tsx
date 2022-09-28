@@ -98,10 +98,10 @@ export const ParkInteractionControl = (props: SnoozeButtonProps) => {
           {trigger === "timer" && (
           <div data-focus-lock-disabled="true">
             <Box padding={"space30"}>
-              <Label htmlFor="unparkAt">
+              <Label htmlFor="unparkAt" required>
                 When would you like the interaction to be unparked?
               </Label>
-              <DateTimePickerWrapper data-no-focus-lock
+              <DateTimePickerWrapper
                 value={unparkDateTime}
                 onchange={handleChangeUnparkTime}
               />
