@@ -4,6 +4,8 @@ This plugin has been developed to provide a 'park' feature when using [Flex Conv
 
 This plugin also enables some avanced features of converation parking such as scheduling an unpark time and routing options for when a conversation is unparked.
 
+![](/Assets/plugin-park.gif)
+
 ## Project structure
 This project is split into 2 elements. The first is a plugin that is deployed to your Flex Project. The second is a Serverless Functions project that can be deployed to your account.
 
