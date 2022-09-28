@@ -25,5 +25,5 @@ export interface DeleteScheduleOutput {
 
 export default interface Scheduler {
     CreateSchedule: (input: CreateScheduleInput & SchedulerProviderInput) => Promise<CreateScheduleOutput>;
-    RemoveSchedule: (input: DeleteScheduleInput & SchedulerProviderInput) => Promise<DeleteScheduleOutput>;
+    DeleteSchedule: (input: DeleteScheduleInput & SchedulerProviderInput) => Promise<DeleteScheduleOutput>;
 }
