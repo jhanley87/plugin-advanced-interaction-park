@@ -15,6 +15,7 @@ import {
   ModalFooterActions,
 } from "@twilio-paste/core";
 import dayjs, { Dayjs } from "dayjs";
+import * as markers from 'focus-lock/constants'
 
 import { ParkButton } from "../ParkButton/ParkButton";
 import { DateTimePickerWrapper } from "../DatePicker/DateTimePicker";
@@ -92,15 +93,17 @@ export const ParkInteractionControl = (props: SnoozeButtonProps) => {
           </Box>
 
           {trigger === "timer" && (
+          <div data-focus-lock-disabled="true">
             <Box padding={"space30"}>
               <Label htmlFor="unparkAt">
                 When would you like the interaction to be unparked?
               </Label>
-              <DateTimePickerWrapper
+              <DateTimePickerWrapper data-no-focus-lock
                 value={unparkDateTime}
                 onchange={handleChangeUnparkTime}
               />
             </Box>
+          </div>
           )}
           <Box padding={"space30"}>
             <Label htmlFor="routing" required>
