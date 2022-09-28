@@ -95,7 +95,7 @@ export const handler: ServerlessFunctionSignature<
       try {
         console.log(`deleting schedule ${attributes.ScheduleId}`);
         //try delete the schedule, if it fails move on
-        let deleteSchedule = await scheduler.RemoveSchedule({
+        let deleteSchedule = await scheduler.DeleteSchedule({
           ScheduleId: attributes.ScheduleId,
           SchedulerProviderApiKey: context.SCHEDULER_API_KEY,
         });

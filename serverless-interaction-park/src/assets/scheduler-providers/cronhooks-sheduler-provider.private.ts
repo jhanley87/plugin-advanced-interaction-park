@@ -47,7 +47,7 @@ export const Scheduler: Scheduler = {
     };
   },
 
-  RemoveSchedule: async (
+  DeleteSchedule: async (
     input: DeleteScheduleInput & SchedulerProviderInput
   ): Promise<DeleteScheduleOutput> => {
     //request deletion

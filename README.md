@@ -87,10 +87,10 @@ import Scheduler, {
   } from "../../interfaces/Scheduler";
 
 export const Scheduler: Scheduler = {
-    CreateScheduleWebhook: async (input: CreateScheduleInput & SchedulerProviderInput): Promise<CreateScheduleOutput> {
+    CreateSchedule: async (input: CreateScheduleInput & SchedulerProviderInput): Promise<CreateScheduleOutput> {
         //Your custom code to create a schedule here
     },
-    RemoveWebhookSchedule: async (input: DeleteScheduleInput & SchedulerProviderInput): Promise<DeleteScheduleOutput> {
+    DeleteSchedule: async (input: DeleteScheduleInput & SchedulerProviderInput): Promise<DeleteScheduleOutput> {
         //Your custom code to delete a schedule here
     }
 }
