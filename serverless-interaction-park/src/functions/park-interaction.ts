@@ -79,7 +79,7 @@ export const handler: ServerlessFunctionSignature<
       //if we should have a time based trigger create the schedule
       let ScheduleId = undefined;
       if (event.ShouldTriggerOnTime) {
-        var schedule = await scheduler.CreateScheduleWebhook({
+        var schedule = await scheduler.CreateSchedule({
           ConversationSid: event.ConversationSid,
           ScheduleDateTime: event.UnparkTime,
           ScheduledWebhookUrl: unparkUrl,

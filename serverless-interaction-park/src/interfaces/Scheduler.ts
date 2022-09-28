@@ -24,6 +24,6 @@ export interface DeleteScheduleOutput {
 }
 
 export default interface Scheduler {
-    CreateScheduleWebhook: (input: CreateScheduleInput & SchedulerProviderInput) => Promise<CreateScheduleOutput>;
-    RemoveWebhookSchedule: (input: DeleteScheduleInput & SchedulerProviderInput) => Promise<DeleteScheduleOutput>;
+    CreateSchedule: (input: CreateScheduleInput & SchedulerProviderInput) => Promise<CreateScheduleOutput>;
+    RemoveSchedule: (input: DeleteScheduleInput & SchedulerProviderInput) => Promise<DeleteScheduleOutput>;
 }

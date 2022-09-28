@@ -95,7 +95,7 @@ export const handler: ServerlessFunctionSignature<
       try {
         console.log(`deleting schedule ${attributes.ScheduleId}`);
         //try delete the schedule, if it fails move on
-        let deleteSchedule = await scheduler.RemoveWebhookSchedule({
+        let deleteSchedule = await scheduler.RemoveSchedule({
           ScheduleId: attributes.ScheduleId,
           SchedulerProviderApiKey: context.SCHEDULER_API_KEY,
         });

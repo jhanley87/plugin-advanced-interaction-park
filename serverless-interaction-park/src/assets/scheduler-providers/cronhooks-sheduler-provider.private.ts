@@ -8,7 +8,7 @@ import Scheduler, {
 import axios from "axios";
 
 export const Scheduler: Scheduler = {
-  CreateScheduleWebhook: async (
+  CreateSchedule: async (
     input: CreateScheduleInput & SchedulerProviderInput
   ): Promise<CreateScheduleOutput> => {
     //Request creation
@@ -47,7 +47,7 @@ export const Scheduler: Scheduler = {
     };
   },
 
-  RemoveWebhookSchedule: async (
+  RemoveSchedule: async (
     input: DeleteScheduleInput & SchedulerProviderInput
   ): Promise<DeleteScheduleOutput> => {
     //request deletion
