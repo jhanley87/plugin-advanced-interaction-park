@@ -56,7 +56,7 @@ With that done you can now configure your plugin
 ```
 cp .env.example .env
 ```
-from here you can add the configuration as follows
+Then you will need to enter your configuration into this new file
 ```
 FLEX_APP_URL_PARK_AN_INTERACTION= https://{Domain that you noted in previous step}/park-interaction
 ```
